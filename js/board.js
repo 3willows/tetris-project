@@ -1,0 +1,22 @@
+// ! Variables & Elements
+// ? DOM Elements
+export const board = document.querySelector(".board")
+export const scoreEl = document.querySelector(".score")
+export const highScoreEl = document.querySelector(".high-score")
+export const levelEl = document.querySelector(".level")
+export const npGridEl = document.querySelector(".next-piece-grid")
+export const messagingEl = document.querySelector(".messaging-area")
+export const containerEl = document.getElementById("container")
+export const overlay = document.getElementById("overlay")
+export const overlayClose = document.getElementById("close-overlay")
+export const menuIconEl = document.getElementById("menu-icon")
+export const audioOnEl = document.getElementById("audio-on")
+export const audioOffEl = document.getElementById("audio-off")
+// ? Sounds
+export const moveSound = document.getElementById("move")
+export const bumpSound = document.getElementById("bump")
+export const gameOverSound = document.getElementById("game-over")
+export const levelUpSound = document.getElementById("level-up")
+export const lineSound = document.getElementById("line")
+export const lockSound = document.getElementById("lock")
+export const rotateSound = document.getElementById("rotate")
