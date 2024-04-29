@@ -18,7 +18,7 @@ import {
   audioOffEl,
   menuIconEl,
   overlayClose,
-} from "./board.js"
+} from "./selectors.js"
 import {
   Tpiece,
   Spiece,
@@ -28,6 +28,8 @@ import {
   Opiece,
   Ipiece,
 } from "./pieces.js"
+import { moveDown, moveLeft, moveRight, translate } from "./moves.js"
+import { rotateClockwise, rotateAnticlockwise } from "./rotate.js"
 
 // ? Variables
 // Board config
@@ -70,7 +72,7 @@ const levelThresholds = [
 ]
 
 // First active piece
-let activePiece
+export let activePiece
 let nextPiece = addPiece(randomClass())
 let fallingPiece
 
@@ -117,18 +119,9 @@ function addPiece(pieceClass) {
   return new pieceClass()
 }
 
-// ? Translate piece
-// Remaps the relative array according to the new anchor position
-// Adjusts according to current rotation
-function translate(anchorPos) {
-  activePiece.relativePosArr = activePiece.rotationOffsets[
-    activePiece.rotationIdx
-  ].map((offset) => anchorPos + offset)
-}
-
 // ? Rotate piece
 // Changes the rotation index clockwise or antiClockwise by 1, then runs translate
-function rotate(direction) {
+export function rotate(direction) {
   if (direction === "clockwise")
     activePiece.rotationIdx !== 3
       ? activePiece.rotationIdx++
@@ -147,262 +140,6 @@ function ghostPosition() {
   )
 }
 
-// ? Move left
-function moveLeft() {
-  if (
-    !testTranslation(
-      "left",
-      activePiece.relativePosArr[0] - 1,
-      activePiece.rotationIdx
-    )
-  ) {
-    translate((activePiece.relativePosArr[0] -= 1))
-    moveSound.currentTime = 0
-    moveSound.play()
-  } else {
-    bumpSound.currentTime = 0
-    bumpSound.play()
-  }
-}
-
-// ? Move right
-function moveRight() {
-  if (
-    !testTranslation(
-      "right",
-      activePiece.relativePosArr[0] + 1,
-      activePiece.rotationIdx
-    )
-  ) {
-    translate((activePiece.relativePosArr[0] += 1))
-    moveSound.currentTime = 0
-    moveSound.play()
-  } else {
-    bumpSound.currentTime = 0
-    bumpSound.play()
-  }
-}
-
-// ? Move down
-function moveDown() {
-  if (
-    !testTranslation(
-      "down",
-      activePiece.relativePosArr[0] + 10,
-      activePiece.rotationIdx
-    )
-  ) {
-    translate((activePiece.relativePosArr[0] += 10))
-  } else {
-    lockPiece()
-  }
-}
-
-// ? Rotate Clockwise
-function rotateClockwise() {
-  let testRotationIdx =
-    activePiece.rotationIdx !== 3 ? activePiece.rotationIdx + 1 : 0
-  // Test 1
-  if (!testRotation(activePiece.relativePosArr[0], testRotationIdx)) {
-    rotateSound.currentTime = 0
-    rotateSound.play()
-    rotate("clockwise")
-    return
-  }
-  // Wall kicks
-  // J, L, S, Z & T pieces
-  if (
-    activePiece.cssClass === "j" ||
-    activePiece.cssClass === "l" ||
-    activePiece.cssClass === "s" ||
-    activePiece.cssClass === "z" ||
-    activePiece.cssClass === "t"
-  ) {
-    // Test 2
-    if (!testRotation(activePiece.relativePosArr[0] + 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 1))
-      rotate("clockwise")
-      return
-    }
-    // Test 3
-    if (!testRotation(activePiece.relativePosArr[0] - 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 1))
-      rotate("clockwise")
-      return
-    }
-    // Test 4
-    if (
-      !testRotation(
-        activePiece.relativePosArr[0] + (width + 1),
-        testRotationIdx
-      )
-    ) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += width + 1))
-      rotate("clockwise")
-      return
-    }
-    // Test 5
-    if (
-      !testRotation(
-        activePiece.relativePosArr[0] - (width - 1),
-        testRotationIdx
-      )
-    ) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= width - 1))
-      rotate("clockwise")
-      return
-    }
-  }
-  // I pieces
-  if (activePiece.cssClass === "i") {
-    // Test 2
-    if (!testRotation(activePiece.relativePosArr[0] + 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 1))
-      rotate("clockwise")
-      return
-    }
-    // Test 3
-    if (!testRotation(activePiece.relativePosArr[0] - 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 1))
-      rotate("clockwise")
-      return
-    }
-    // Test 4
-    if (!testRotation(activePiece.relativePosArr[0] + 2, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 2))
-      rotate("clockwise")
-      return
-    }
-    // Test 5
-    if (!testRotation(activePiece.relativePosArr[0] - 2, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 2))
-      rotate("clockwise")
-      return
-    }
-  }
-  // If no moves possible, play bump sound
-  bumpSound.currentTime = 0
-  bumpSound.play()
-}
-
-// ? Rotate Anticlockwise
-function rotateAnticlockwise() {
-  let testRotationIdx =
-    activePiece.rotationIdx !== 0 ? activePiece.rotationIdx - 1 : 3
-  if (!testRotation(activePiece.relativePosArr[0], testRotationIdx)) {
-    rotateSound.currentTime = 0
-    rotateSound.play()
-    rotate("anticlockwise")
-    return
-  }
-  // Wall kicks
-  // J, L, S, Z & T pieces
-  if (
-    activePiece.cssClass === "j" ||
-    activePiece.cssClass === "l" ||
-    activePiece.cssClass === "s" ||
-    activePiece.cssClass === "z" ||
-    activePiece.cssClass === "t"
-  ) {
-    // Test 2
-    if (!testRotation(activePiece.relativePosArr[0] + 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 1))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 3
-    if (!testRotation(activePiece.relativePosArr[0] - 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 1))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 4
-    if (
-      !testRotation(
-        activePiece.relativePosArr[0] + (width + 1),
-        testRotationIdx
-      )
-    ) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += width + 1))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 5
-    if (
-      !testRotation(
-        activePiece.relativePosArr[0] - (width - 1),
-        testRotationIdx
-      )
-    ) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= width - 1))
-      rotate("anticlockwise")
-      return
-    }
-  }
-  // I pieces
-  if (activePiece.cssClass === "i") {
-    // Test 2
-    if (!testRotation(activePiece.relativePosArr[0] + 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 1))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 3
-    if (!testRotation(activePiece.relativePosArr[0] - 1, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 1))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 4
-    if (!testRotation(activePiece.relativePosArr[0] + 2, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] += 2))
-      rotate("anticlockwise")
-      return
-    }
-    // Test 5
-    if (!testRotation(activePiece.relativePosArr[0] - 2, testRotationIdx)) {
-      rotateSound.currentTime = 0
-      rotateSound.play()
-      translate((activePiece.relativePosArr[0] -= 2))
-      rotate("anticlockwise")
-      return
-    }
-  }
-  // If no moves possible, play bump sound
-  bumpSound.currentTime = 0
-  bumpSound.play()
-}
-
 // ? Drop piece
 function dropPiece() {
   translate(findLowest())
@@ -412,7 +149,7 @@ function dropPiece() {
 
 // ? Test whether movement is possible
 // Direction params - left, right, down, rotateClockwise, rotateAnticlockwise
-function testTranslation(direction, anchorPos, rotationIdx) {
+export function testTranslation(direction, anchorPos, rotationIdx) {
   // Get new potential position
   let potentialPosition = activePiece.rotationOffsets[rotationIdx].map(
     (offset) => anchorPos + offset
@@ -450,7 +187,7 @@ function testTranslation(direction, anchorPos, rotationIdx) {
 }
 
 // Rotations
-function testRotation(anchorPos, rotationIdx) {
+export function testRotation(anchorPos, rotationIdx) {
   let potentialPosition = activePiece.rotationOffsets[rotationIdx].map(
     (offset) => anchorPos + offset
   )
@@ -476,7 +213,7 @@ function findLowest() {
 }
 
 // ? Lock piece and generate a new one
-function lockPiece() {
+export function lockPiece() {
   for (let cell of activePiece.actualPosArr) {
     cell.classList.add("locked")
     renderPiece()

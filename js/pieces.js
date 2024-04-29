@@ -1,6 +1,6 @@
 // Piece classes
 
-import {width, npg2x2Cells, npg3x3Cells, npg4x4Cells} from "./scripts-current.js"
+import {width, npg2x2Cells, npg3x3Cells, npg4x4Cells} from "./main.js"
 
 export class Tpiece {
   constructor() {
