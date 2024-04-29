@@ -1,6 +1,7 @@
 import { bumpSound, rotateSound } from "./selectors.js"
 import { translate } from "./moves.js"
-import { activePiece, testRotation, rotate, width } from "./main.js"
+import { activePiece, rotate, width } from "./main.js"
+import { testRotation } from "./tests.js"
 
 // ? Rotate Clockwise
 export function rotateClockwise() {

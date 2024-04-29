@@ -1,12 +1,12 @@
 import { moveSound, bumpSound } from "./selectors.js"
-import { testTranslation, activePiece, lockPiece } from "./main.js"
+import { activePiece, lockPiece } from "./main.js"
+import { testTranslation } from "./tests.js"
 
 export function translate(anchorPos) {
   activePiece.relativePosArr = activePiece.rotationOffsets[
     activePiece.rotationIdx
   ].map((offset) => anchorPos + offset)
 }
-
 
 // ? Move left
 export function moveLeft() {

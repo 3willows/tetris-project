@@ -1,19 +1,12 @@
 import {
   board,
   npGridEl,
-  moveSound,
-  bumpSound,
-  rotateSound,
   lockSound,
   lineSound,
   levelUpSound,
   containerEl,
   messagingEl,
   gameOverSound,
-  scoreEl,
-  levelEl,
-  highScoreEl,
-  overlay,
   audioOnEl,
   audioOffEl,
   menuIconEl,
@@ -28,29 +21,40 @@ import {
   Opiece,
   Ipiece,
 } from "./pieces.js"
-import { moveDown, moveLeft, moveRight, translate } from "./moves.js"
-import { rotateClockwise, rotateAnticlockwise } from "./rotate.js"
+import { moveDown, translate } from "./moves.js"
+import { testTranslation } from "./tests.js"
+import {
+  renderPiece,
+  renderNextPiece,
+  renderScoreboard,
+  removePiece,
+  resetBoard,
+  overlayOn,
+  overlayOff,
+} from "./renderItems.js"
+import { controls } from "./controls.js"
+import { audioOn, audioOff } from "./audio.js"
 
 // ? Variables
 // Board config
 export const width = 10
 export const height = 24
 const hiddenRows = 4
-const cellCount = width * height
-let cells = []
+export const cellCount = width * height
+export let cells = []
 
 // Next piece grid config
 export let npg3x3Cells = nextPieceGrid(3, 3)
 export let npg2x2Cells = nextPieceGrid(2, 2)
 export let npg4x4Cells = nextPieceGrid(4, 4)
-const npgArr = [npg3x3Cells, npg2x2Cells, npg4x4Cells]
+export const npgArr = [npg3x3Cells, npg2x2Cells, npg4x4Cells]
 
 // Piece classes
 
 const pieceClasses = [Tpiece, Spiece, Zpiece, Lpiece, Jpiece, Opiece, Ipiece]
 
 // Game status - inactive, active or paused
-let gameStatus = "inactive"
+export let gameStatus = "inactive"
 
 // Game speed
 let speed = 600
@@ -58,22 +62,22 @@ const startSpeed = 600
 const speedDecrement = 50
 
 // Scoring
-let score = 0
-let highScore = 100
-let highScoreBeaten = false
+export let score = 0
+export let highScore = 100
+export let highScoreBeaten = false
 let highScoreMsgDisplayed = false
 const singleScore = 100
 const points = [singleScore, singleScore * 3, singleScore * 5, singleScore * 8]
 
 // Levels
-let level = 1
+export let level = 1
 const levelThresholds = [
   500, 1000, 2500, 5000, 8000, 12000, 17000, 20000, 25000,
 ]
 
 // First active piece
 export let activePiece
-let nextPiece = addPiece(randomClass())
+export let nextPiece = addPiece(randomClass())
 let fallingPiece
 
 // ! Functions
@@ -134,71 +138,17 @@ export function rotate(direction) {
 }
 
 // ? Ghost piece position
-function ghostPosition() {
+export function ghostPosition() {
   return activePiece.rotationOffsets[activePiece.rotationIdx].map(
     (offset) => findLowest() + offset
   )
 }
 
 // ? Drop piece
-function dropPiece() {
+export function dropPiece() {
   translate(findLowest())
   renderPiece()
   lockPiece()
-}
-
-// ? Test whether movement is possible
-// Direction params - left, right, down, rotateClockwise, rotateAnticlockwise
-export function testTranslation(direction, anchorPos, rotationIdx) {
-  // Get new potential position
-  let potentialPosition = activePiece.rotationOffsets[rotationIdx].map(
-    (offset) => anchorPos + offset
-  )
-
-  // Check none of the positions exceed the cell count
-  if (potentialPosition.some((pos) => pos > cellCount - 1)) return true
-
-  // Get an array of the potential cells
-  let potentialCells = potentialPosition.map((pos) => cells[pos])
-
-  // Check that none of them are locked
-  for (let cell of potentialCells) {
-    if (cell.classList.contains("locked")) return cell
-  }
-
-  // Check left bounds
-  if (direction === "left") {
-    let modulusArray = potentialPosition.map(
-      (relativePos) => relativePos % width
-    )
-    console.log(modulusArray)
-    return modulusArray.includes(9)
-  }
-  // Check right bounds
-  if (direction === "right") {
-    let modulusArray = potentialPosition.map(
-      (relativePos) => relativePos % width
-    )
-    return modulusArray.includes(0)
-  }
-  if (direction === "down") {
-    return potentialPosition.some((pos) => pos > cellCount - 1)
-  }
-}
-
-// Rotations
-export function testRotation(anchorPos, rotationIdx) {
-  let potentialPosition = activePiece.rotationOffsets[rotationIdx].map(
-    (offset) => anchorPos + offset
-  )
-
-  if (activePiece.relativePosArr[0] % 10 < 6) {
-    return testTranslation("left", potentialPosition[0], rotationIdx)
-  }
-
-  if (activePiece.relativePosArr[0] % 10 > 5) {
-    return testTranslation("right", potentialPosition[0], rotationIdx)
-  }
 }
 
 // ? Find lowest possible position
@@ -394,7 +344,7 @@ function init() {
 
 // ! Game state functions
 // ? Game Start
-function gameStart() {
+export function gameStart() {
   gameStatus = "active"
   containerEl.classList.remove(
     "level1",
@@ -455,187 +405,19 @@ function gameOver() {
 }
 
 // ? Pause
-function pauseGame() {
+export function pauseGame() {
   gameStatus = "paused"
   stopFall()
   showMessage("PAUSED<p>press space to restart</p>", "persistent")
 }
 
 // ? Resume
-function resumeGame() {
+export function resumeGame() {
   gameStatus = "active"
   // Render first piece
   renderPiece()
   startFall()
   showMessage("RESUME", "alert")
-}
-
-// ! Render functions
-// ? Render piece
-function renderPiece() {
-  // Target cells with indices that match relativePosArr
-  activePiece.actualPosArr = activePiece.relativePosArr.map(
-    (relativePos) => cells[relativePos]
-  )
-  // Add the relevant CSS class to each cell
-  for (let element of activePiece.actualPosArr) {
-    element.classList.add(activePiece.cssClass, "active")
-  }
-  renderGhost()
-}
-
-// ? Remove piece
-function removePiece() {
-  // Remove the relevant CSS class from each cell
-  for (let cell of activePiece.actualPosArr) {
-    cell.classList.remove(activePiece.cssClass, "active")
-  }
-  removeGhost()
-}
-
-// ? Render ghost piece
-function renderGhost() {
-  let ghostCells = ghostPosition().map((pos) => cells[pos])
-  for (let cell of ghostCells) {
-    if (!cell.classList.contains("active"))
-      cell.classList.add(activePiece.cssClass, "ghost")
-  }
-}
-
-function removeGhost() {
-  let ghostCells = ghostPosition().map((pos) => cells[pos])
-  for (let cell of ghostCells) {
-    cell.classList.remove(activePiece.cssClass, "ghost")
-  }
-}
-
-// ? Render next piece
-function renderNextPiece() {
-  // Hide all grids & remove classes
-  for (let arr of npgArr) {
-    for (let cell of arr) {
-      cell.style.display = "none"
-      cell.className = ""
-    }
-  }
-  // Show grid that correlates with the next piece
-  let grid = nextPiece.nextPieceGrid
-  for (let cell of grid) {
-    cell.style.display = "block"
-  }
-  // Resize the grid
-  if (grid === npg4x4Cells) {
-    npGridEl.style.width = "16vmin"
-    npGridEl.style.height = "16vmin"
-  }
-  if (grid === npg2x2Cells) {
-    npGridEl.style.width = "8vmin"
-    npGridEl.style.height = "8vmin"
-  }
-  if (grid === npg3x3Cells) {
-    npGridEl.style.width = "12vmin"
-    npGridEl.style.height = "12vmin"
-  }
-
-  // Color the cells of the next piece
-  let positions = nextPiece.nextPiecePos
-  let colorCells = positions.map((pos) => grid[pos])
-  for (let cell of colorCells) {
-    cell.classList.add(nextPiece.cssClass)
-  }
-}
-
-function renderScoreboard() {
-  scoreEl.innerHTML = score
-  levelEl.innerHTML = level
-  highScoreEl.innerHTML = highScore
-  if (highScoreBeaten) highScoreEl.innerHTML = `${highScore}*`
-}
-
-function resetBoard() {
-  cells.forEach((cell) =>
-    cell.classList.remove(
-      "t",
-      "s",
-      "l",
-      "z",
-      "i",
-      "j",
-      "o",
-      "active",
-      "locked",
-      "ghost",
-      "gameover"
-    )
-  )
-}
-
-function overlayOn() {
-  overlay.style.display = "block"
-}
-
-function overlayOff() {
-  overlay.style.display = "none"
-}
-
-// ! Controls
-function controls(event) {
-  const key = event.keyCode
-
-  const up = 38
-  const down = 40
-  const left = 37
-  const right = 39
-  const space = 32
-  const z = 90
-  const x = 88
-  const p = 80
-
-  if (gameStatus === "active") {
-    // Remove piece from current position, before moving to new position
-    removePiece()
-
-    if (key === down) moveDown()
-    if (key === left) moveLeft()
-    if (key === right) moveRight()
-    if (key === x || key === up) rotateClockwise()
-    if (key === z) rotateAnticlockwise()
-    if (key === space) dropPiece()
-    if (key === p) pauseGame()
-
-    // Render piece in new position
-    renderPiece()
-  }
-  if (gameStatus === "inactive") {
-    if (key === space) gameStart()
-  }
-  if (gameStatus === "paused") {
-    if (key === space) resumeGame()
-  }
-}
-
-function audioOn() {
-  moveSound.muted = false
-  bumpSound.muted = false
-  gameOverSound.muted = false
-  levelUpSound.muted = false
-  lineSound.muted = false
-  lockSound.muted = false
-  rotateSound.muted = false
-  audioOnEl.style.textDecoration = "underline"
-  audioOffEl.style.textDecoration = "none"
-}
-
-function audioOff() {
-  moveSound.muted = true
-  bumpSound.muted = true
-  gameOverSound.muted = true
-  levelUpSound.muted = true
-  lineSound.muted = true
-  lockSound.muted = true
-  rotateSound.muted = true
-  audioOffEl.style.textDecoration = "underline"
-  audioOnEl.style.textDecoration = "none"
 }
 
 // ! Events
